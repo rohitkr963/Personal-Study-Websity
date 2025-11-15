@@ -1,5 +1,6 @@
 import axios from "axios";
 import { setAuthToken as setQuestionAuth } from "../api";
+import { setAuthToken as setCategoryAuth } from "./categoryApi";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const authClient = axios.create({ baseURL: `${API_BASE_URL}/api/auth` });
@@ -25,6 +26,7 @@ export async function register(payload) {
   const data = res.data;
   if (data && data.token) {
     setQuestionAuth(data.token);
+    setCategoryAuth(data.token);
     saveUserToStorage(data.user || null);
   }
   return data;
@@ -35,6 +37,7 @@ export async function login(payload) {
   const data = res.data;
   if (data && data.token) {
     setQuestionAuth(data.token);
+    setCategoryAuth(data.token);
     saveUserToStorage(data.user || null);
   }
   return data;
@@ -42,6 +45,7 @@ export async function login(payload) {
 
 export function logout() {
   setQuestionAuth(null);
+  setCategoryAuth(null);
   saveUserToStorage(null);
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Folder,
   Star,
@@ -14,7 +14,9 @@ import {
   Plus,
   Menu,
   X,
+  AlertCircle,
 } from "lucide-react";
+import * as categoryApi from "../utils/categoryApi.js";
 
 // Default categories with their icons and colors
 const DEFAULT_CATEGORIES = [
@@ -25,33 +27,63 @@ const DEFAULT_CATEGORIES = [
   { id: "trash", name: "Trash", icon: Trash2, color: "slate" },
 ];
 
-const CUSTOM_CATEGORIES = [
-  { id: "dsa", name: "DSA – JavaScript", icon: Binary, color: "blue" },
-  { id: "react", name: "⚛️ React", icon: Atom, color: "cyan" },
-  { id: "nodejs", name: "Node.js", icon: Trees, color: "green" },
-  { id: "express", name: "Express", icon: Server, color: "red" },
-  { id: "mongodb", name: "MongoDB", icon: Database, color: "emerald" },
-];
-
 function Sidebar({ activeCategory, onSelectCategory, onAddSection, isMobileOpen, onCloseMobile }) {
-  const [customCategories, setCustomCategories] = useState(CUSTOM_CATEGORIES);
+  const [customCategories, setCustomCategories] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSectionName, setNewSectionName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleAddSection = () => {
+  // Load categories on mount
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const categories = await categoryApi.getCategories();
+      setCustomCategories(categories);
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+      setError("Failed to load sections");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddSection = async () => {
     if (!newSectionName.trim()) return;
 
-    const newCategory = {
-      id: newSectionName.toLowerCase().replace(/\s+/g, "-"),
-      name: newSectionName,
-      icon: Folder,
-      color: "indigo",
-    };
+    try {
+      setError(null);
+      const newCategory = await categoryApi.createCategory(
+        newSectionName,
+        "Folder",
+        "indigo"
+      );
+      setCustomCategories([...customCategories, newCategory]);
+      setNewSectionName("");
+      setShowAddModal(false);
+      onAddSection?.(newCategory);
+    } catch (err) {
+      console.error("Failed to create category:", err);
+      setError("Failed to create section. Please try again.");
+    }
+  };
 
-    setCustomCategories([...customCategories, newCategory]);
-    setNewSectionName("");
-    setShowAddModal(false);
-    onAddSection?.(newCategory);
+  const handleDeleteSection = async (id) => {
+    if (!confirm("Are you sure you want to delete this section?")) return;
+
+    try {
+      setError(null);
+      await categoryApi.deleteCategory(id);
+      setCustomCategories(customCategories.filter((cat) => cat.id !== id));
+    } catch (err) {
+      console.error("Failed to delete category:", err);
+      setError("Failed to delete section");
+    }
   };
 
   const handleCategoryClick = (categoryId) => {
@@ -182,6 +214,13 @@ function Sidebar({ activeCategory, onSelectCategory, onAddSection, isMobileOpen,
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm border border-slate-200 dark:border-slate-800 p-6">
             <h2 className="text-xl font-semibold mb-4">Add New Section</h2>
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg flex items-center gap-2 text-red-800 dark:text-red-300 text-sm">
+                <AlertCircle size={16} />
+                {error}
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -202,6 +241,7 @@ function Sidebar({ activeCategory, onSelectCategory, onAddSection, isMobileOpen,
                   onClick={() => {
                     setShowAddModal(false);
                     setNewSectionName("");
+                    setError(null);
                   }}
                   className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
                 >
@@ -209,10 +249,10 @@ function Sidebar({ activeCategory, onSelectCategory, onAddSection, isMobileOpen,
                 </button>
                 <button
                   onClick={handleAddSection}
-                  disabled={!newSectionName.trim()}
+                  disabled={!newSectionName.trim() || loading}
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                  Create Section
+                  {loading ? "Creating..." : "Create Section"}
                 </button>
               </div>
             </div>

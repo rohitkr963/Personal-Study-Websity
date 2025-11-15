@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./src/config/db");
 const questionRoutes = require("./src/routes/questionRoutes");
 const authRoutes = require("./src/routes/authRoutes");
+const categoryRoutes = require("./src/routes/categoryRoutes");
 const { notFound, errorHandler } = require("./src/middleware/errorMiddleware");
 
 dotenv.config();
@@ -45,6 +46,7 @@ app.get("/", (req, res) => {
 // API Routes
 app.use("/api/questions", questionRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // Error handling
 app.use(notFound);
