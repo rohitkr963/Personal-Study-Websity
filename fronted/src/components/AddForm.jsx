@@ -135,6 +135,7 @@ function AddForm({ onSubmit, category = "all" }) {
               <option value="express">Express</option>
               <option value="mongodb">MongoDB</option>
               <option value="javascript">JavaScript</option>
+              <option value="interviews">Interviews</option>
             </select>
           </div>
 

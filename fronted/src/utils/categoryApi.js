@@ -15,15 +15,6 @@ if (token) {
   categoryClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 }
 
-// Update token when it changes
-export function setAuthToken(token) {
-  if (token) {
-    categoryClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  } else {
-    delete categoryClient.defaults.headers.common["Authorization"];
-  }
-}
-
 export async function getCategories() {
   try {
     const res = await categoryClient.get("/");
@@ -64,4 +55,4 @@ export async function updateCategoryOrder(categories) {
   }
 }
 
-export default { getCategories, createCategory, deleteCategory, updateCategoryOrder, setAuthToken };
+export default { getCategories, createCategory, deleteCategory, updateCategoryOrder };
