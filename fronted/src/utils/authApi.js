@@ -1,7 +1,8 @@
 import axios from "axios";
 import { setAuthToken as setQuestionAuth } from "../api";
 
-const authClient = axios.create({ baseURL: "/api/auth" });
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const authClient = axios.create({ baseURL: `${API_BASE_URL}/api/auth` });
 
 function saveUserToStorage(user) {
   try {
