@@ -20,9 +20,19 @@ async function getQuestions(req, res, next) {
     // if unauthenticated, return only public (ownerless) questions so browsing works without login.
     let query;
     if (req.user && req.user.id) {
-      query = { $or: [{ owner: req.user.id }, { owner: { $exists: false } }, { owner: null }] };
+      query = { 
+        $and: [
+          { $or: [{ owner: req.user.id }, { owner: { $exists: false } }, { owner: null }] },
+          { trashed: { $ne: true } } // Exclude trashed questions
+        ]
+      };
     } else {
-      query = { $or: [{ owner: { $exists: false } }, { owner: null }] };
+      query = { 
+        $and: [
+          { $or: [{ owner: { $exists: false } }, { owner: null }] },
+          { trashed: { $ne: true } } // Exclude trashed questions
+        ]
+      };
     }
     const questions = await Question.find(query).sort({ createdAt: -1 });
     res.json(questions);

@@ -9,6 +9,7 @@ const categorySchema = new mongoose.Schema(
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     isDefault: { type: Boolean, default: false }, // to identify default categories
     order: { type: Number, default: 0 }, // for ordering
+    trashed: { type: Boolean, default: false }, // for soft delete to trash
   },
   { timestamps: true }
 );

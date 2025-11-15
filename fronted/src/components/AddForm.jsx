@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { validateQuestion } from "../utils/validation.js";
+import { getCategories } from "../utils/categoryApi.js";
 
 function AddForm({ onSubmit, category = "all" }) {
   const [question, setQuestion] = useState("");
@@ -8,6 +9,36 @@ function AddForm({ onSubmit, category = "all" }) {
   const [difficulty, setDifficulty] = useState("medium");
   const [categoryState, setCategoryState] = useState(category || "all");
   const [errors, setErrors] = useState({});
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  // Fetch categories from database on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const response = await getCategories();
+        if (response && Array.isArray(response)) {
+          setCategories(response);
+        }
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+        // Keep default categories as fallback
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    fetchCategories();
+    
+    // Refresh categories every 5 seconds to stay in sync with Sidebar
+    const interval = setInterval(fetchCategories, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update categoryState when category prop changes
+  useEffect(() => {
+    setCategoryState(category || "all");
+  }, [category]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -18,6 +49,8 @@ function AddForm({ onSubmit, category = "all" }) {
       .filter(Boolean);
     
     const payload = { question, answer, tags, difficulty, category: categoryState };
+    
+    console.log("🎯 AddForm Submitting:", { category: categoryState, payload }); // DEBUG
     
     // Validate before submitting
     const validationErrors = validateQuestion(payload);
@@ -36,6 +69,18 @@ function AddForm({ onSubmit, category = "all" }) {
     setDifficulty("medium");
     setCategoryState(category || "all");
   }
+
+  // Refresh categories when select is focused
+  const handleCategoryFocus = async () => {
+    try {
+      const response = await getCategories();
+      if (response && Array.isArray(response)) {
+        setCategories(response);
+      }
+    } catch (error) {
+      console.error("Failed to refresh categories:", error);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6">
@@ -122,21 +167,24 @@ function AddForm({ onSubmit, category = "all" }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
           <div>
             <label className="block text-sm font-medium mb-2">Category</label>
-            {/* Category select: reuse app study sections */}
+            {/* Category select: fetches from database and shows custom study sections */}
             <select
               className="w-full rounded-lg border bg-slate-50 dark:bg-slate-950 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 border-slate-300 dark:border-slate-700"
               value={categoryState}
               onChange={(e) => setCategoryState(e.target.value)}
+              onFocus={handleCategoryFocus}
+              disabled={loadingCategories}
             >
               <option value="all">All Questions</option>
-              <option value="dsa">DSA – JavaScript</option>
-              <option value="react">React</option>
-              <option value="nodejs">Node.js</option>
-              <option value="express">Express</option>
-              <option value="mongodb">MongoDB</option>
-              <option value="javascript">JavaScript</option>
-              <option value="interviews">Interviews</option>
+              {categories.map((cat) => (
+                <option key={cat._id || cat.slug} value={cat.slug}>
+                  {cat.name}
+                </option>
+              ))}
             </select>
+            {loadingCategories && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Loading categories...</p>
+            )}
           </div>
 
           <div className="flex items-end justify-end">

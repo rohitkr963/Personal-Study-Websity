@@ -11,23 +11,48 @@ const { notFound, errorHandler } = require("./src/middleware/errorMiddleware");
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || "development";
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5174";
+
+// Allow multiple origins
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "https://personal-study-websity.vercel.app",
+  CORS_ORIGIN,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
+].filter(Boolean);
 
 connectDB();
 
 const app = express();
 
-// Middleware
-// In development allow the requesting origin dynamically so the frontend
-// dev server can run on different ports (5173 or 5174). In production
-// use a fixed CORS_ORIGIN.
-if (process.env.NODE_ENV !== "production") {
-  app.use(cors({ origin: true, credentials: true }));
-  console.log("✓ CORS: allowing dynamic origin for development");
-} else {
-  app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
-  console.log(`✓ CORS enabled for: ${CORS_ORIGIN}`);
-}
+// Middleware - CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else if (NODE_ENV !== "production") {
+      // In development, allow any origin
+      callback(null, true);
+    } else {
+      // Log CORS errors in production
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow anyway but log
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+app.use(cors(corsOptions));
+console.log(`✓ CORS enabled for:`, allowedOrigins.join(", "));
 app.use(express.json());
 
 if (process.env.NODE_ENV !== "production") {

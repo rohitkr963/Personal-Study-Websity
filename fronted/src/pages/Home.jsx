@@ -138,13 +138,19 @@ function Home() {
         list = list.filter((it) => it.trashed);
       } else {
         // Treat as a study section/category
+        const beforeFilter = list.length;
         list = list.filter((it) => String(it.category || "all").toLowerCase() === ac);
+        console.log(`🔍 Category filter [${ac}]: ${beforeFilter} → ${list.length} items`); // DEBUG
       }
     }
 
     // If we're NOT in the revision view, hide recently-reviewed items
     if (String(activeCategory).toLowerCase() !== "revision") {
+      const beforeRecent = list.length;
       list = list.filter((it) => !recentReviewedSet.has(it.id));
+      if (beforeRecent !== list.length) {
+        console.log(`🕐 Recently reviewed filter: ${beforeRecent} → ${list.length} items`); // DEBUG
+      }
     }
 
     if (selectedTag) {
@@ -208,20 +214,25 @@ function Home() {
       return;
     }
 
+    console.log("📝 handleAdd called with data:", data); // DEBUG
+
     try {
       const created = await api.addQuestion(data);
+      console.log("✅ Question created:", { category: created.category, id: created.id }); // DEBUG
 
-      // Try to refresh the entire list from server to avoid stale localstate issues
+      // Try to refresh the entire list from server to avoid stale local state issues
       try {
         const serverItems = await api.getQuestions();
         // Normalize categories
         const normalized = serverItems.map((it) => ({ ...it, category: String(it.category || "all").toLowerCase() }));
+        console.log("📊 Questions fetched from server:", normalized.length, "questions"); // DEBUG
         setItems(normalized);
         save(normalized);
       } catch (refreshErr) {
         // Fallback: ensure created has a normalized category and prepend
         if (!created.category) created.category = data.category || "all";
         created.category = String(created.category).toLowerCase();
+        console.log("⚠️ Using fallback, created question:", created); // DEBUG
         setItems((prev) => {
           const next = [created, ...prev];
           save(next);
@@ -457,6 +468,7 @@ function Home() {
         onSelectCategory={setActiveCategory}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
+        currentUser={currentUser}
       />
 
       {/* Main Content */}

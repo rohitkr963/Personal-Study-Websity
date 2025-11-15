@@ -1,6 +1,7 @@
 const Category = require("../models/Category");
+const Question = require("../models/Question");
 
-// Get all categories for user
+// Get all categories for user (excluding trashed)
 exports.getCategories = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -8,7 +9,7 @@ exports.getCategories = async (req, res) => {
       return res.status(400).json({ message: "User not authenticated" });
     }
 
-    const categories = await Category.find({ owner: userId }).sort({ order: 1 });
+    const categories = await Category.find({ owner: userId, trashed: false }).sort({ order: 1 });
     res.json(categories);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -54,7 +55,7 @@ exports.createCategory = async (req, res) => {
   }
 };
 
-// Delete category
+// Delete category (soft delete to trash). Do NOT mark questions as trashed.
 exports.deleteCategory = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -73,8 +74,11 @@ exports.deleteCategory = async (req, res) => {
       return res.status(400).json({ message: "Cannot delete default categories" });
     }
 
-    await Category.deleteOne({ _id: id });
-    res.json({ message: "Category deleted" });
+    // Soft-delete the category only. Questions should keep their `category` field
+    // so they will re-appear in the category when it is restored.
+    await Category.findByIdAndUpdate({ _id: id }, { trashed: true });
+
+    res.json({ message: "Category moved to trash (questions preserved)" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -102,3 +106,72 @@ exports.updateCategoryOrder = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// Get trashed categories for user
+exports.getTrashedCategories = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: "User not authenticated" });
+    }
+
+    const categories = await Category.find({ owner: userId, trashed: true }).sort({ createdAt: -1 });
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Restore category from trash. Questions are preserved and will be visible again
+// when the category becomes non-trashed because their `category` field was not changed.
+exports.restoreCategory = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: "User not authenticated" });
+    }
+
+    const { id } = req.params;
+
+    const category = await Category.findOne({ _id: id, owner: userId, trashed: true });
+    if (!category) {
+      return res.status(404).json({ message: "Trashed category not found" });
+    }
+
+    // Restore category only; questions were preserved when the category was trashed.
+    await Category.findByIdAndUpdate({ _id: id }, { trashed: false });
+
+    res.json({ message: "Category restored from trash (questions preserved)" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Permanently delete trashed category (and its questions)
+exports.permanentlyDeleteCategory = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({ message: "User not authenticated" });
+    }
+
+    const { id } = req.params;
+
+    const category = await Category.findOne({ _id: id, owner: userId, trashed: true });
+    if (!category) {
+      return res.status(404).json({ message: "Trashed category not found" });
+    }
+
+    // Permanently delete questions in this category (delete all regardless of trashed flag)
+    const categorySlug = category.slug;
+    await Question.deleteMany({ owner: userId, category: categorySlug });
+
+    // Permanently delete the category
+    await Category.deleteOne({ _id: id });
+
+    res.json({ message: "Category and its questions permanently deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+

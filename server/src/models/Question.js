@@ -13,14 +13,14 @@ const questionSchema = new mongoose.Schema(
     },
     starred: { type: Boolean, default: false },
     category: { 
-      type: String, 
-      enum: ["all", "dsa", "react", "nodejs", "express", "mongodb"],
+      type: String,
       default: "all"
     },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
     reviewLevel: { type: Number, default: 1 },
     lastReviewed: { type: Date, default: Date.now },
     collection: { type: String, default: "default" },
+    trashed: { type: Boolean, default: false }, // for soft delete/trash
   },
   { timestamps: true }
 );

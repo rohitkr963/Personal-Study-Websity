@@ -1,5 +1,6 @@
 import axios from "axios";
 import API_BASE_URL from "../config/api.config.js";
+import tokenManager from "./tokenManager.js";
 
 const categoryClient = axios.create({
   baseURL: `${API_BASE_URL}/api/categories`,
@@ -9,10 +10,17 @@ const categoryClient = axios.create({
   },
 });
 
-// Attach token from localStorage
-const token = localStorage.getItem("authToken");
-if (token) {
-  categoryClient.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+// Add token to every request dynamically
+categoryClient.interceptors.request.use((config) => {
+  const token = tokenManager.getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export function setAuthToken(token) {
+  tokenManager.setToken(token);
 }
 
 export async function getCategories() {
@@ -55,4 +63,34 @@ export async function updateCategoryOrder(categories) {
   }
 }
 
-export default { getCategories, createCategory, deleteCategory, updateCategoryOrder };
+export async function getTrashedCategories() {
+  try {
+    const res = await categoryClient.get("/trash/all");
+    return res.data || [];
+  } catch (err) {
+    console.error("Failed to fetch trashed categories:", err);
+    throw err;
+  }
+}
+
+export async function restoreCategory(id) {
+  try {
+    const res = await categoryClient.patch(`/trash/restore/${id}`);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to restore category:", err);
+    throw err;
+  }
+}
+
+export async function permanentlyDeleteCategory(id) {
+  try {
+    const res = await categoryClient.delete(`/trash/permanent/${id}`);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to permanently delete category:", err);
+    throw err;
+  }
+}
+
+export default { getCategories, createCategory, deleteCategory, updateCategoryOrder, getTrashedCategories, restoreCategory, permanentlyDeleteCategory };
