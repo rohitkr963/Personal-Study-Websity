@@ -33,10 +33,12 @@ function TopBar({
         </div>
 
         {/* Right: Search & Add Button */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <div className="hidden md:block flex-1 max-w-xs">
             <SearchBar value={search} onChange={onSearchChange} />
           </div>
+          
+          {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2">
             <button
               onClick={() => { if (currentUser) { onStartStudy && onStartStudy(); } else { navigate('/login'); } }}
@@ -105,6 +107,67 @@ function TopBar({
               </div>
             )}
           </div>
+
+          {/* Mobile Menu - Icon buttons only */}
+          <div className="flex md:hidden items-center gap-1">
+            <button
+              onClick={() => { if (currentUser) { onStartStudy && onStartStudy(); } else { navigate('/login'); } }}
+              title="Start Study"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+            >
+              <Play size={20} className="text-emerald-600" />
+            </button>
+
+            <button
+              onClick={() => { if (currentUser) { onAddClick && onAddClick(); } else { navigate('/login'); } }}
+              title="Add Question"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+            >
+              <Plus size={20} className="text-indigo-600" />
+            </button>
+
+            <button
+              onClick={() => { if (currentUser) { onSettingsClick && onSettingsClick(); } else { navigate('/login'); } }}
+              title="Settings"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+            >
+              <Settings size={20} className="text-slate-700 dark:text-slate-300" />
+            </button>
+
+            {/* Mobile Auth Menu */}
+            {currentUser ? (
+              <div className="flex items-center gap-1 ml-1 border-l border-slate-300 dark:border-slate-700 pl-1">
+                <div className="text-xs text-slate-600 dark:text-slate-400 px-2">
+                  {currentUser.name ? currentUser.name.split(' ')[0] : currentUser.email.split('@')[0]}
+                </div>
+                <button
+                  onClick={onLogout}
+                  title="Sign out"
+                  className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-300 transition-all"
+                >
+                  Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 ml-1 border-l border-slate-300 dark:border-slate-700 pl-1">
+                <button
+                  onClick={() => navigate('/login')}
+                  title="Sign in"
+                  className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-all"
+                >
+                  In
+                </button>
+                <button
+                  onClick={() => navigate('/signup')}
+                  title="Sign up"
+                  className="px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 transition-all"
+                >
+                  Up
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={onMenuClick}
             className="md:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
