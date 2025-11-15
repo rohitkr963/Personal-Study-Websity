@@ -2,10 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const dotenv = require("dotenv");
-const connectDB = require("./config/db");
-const questionRoutes = require("./routes/questionRoutes");
-const authRoutes = require("./routes/authRoutes");
-const { notFound, errorHandler } = require("./middleware/errorMiddleware");
+const connectDB = require("./src/config/db");
+const questionRoutes = require("./src/routes/questionRoutes");
+const authRoutes = require("./src/routes/authRoutes");
+const { notFound, errorHandler } = require("./src/middleware/errorMiddleware");
 
 dotenv.config();
 
